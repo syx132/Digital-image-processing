@@ -16,7 +16,18 @@ def apply_transform(image, scale, rotation, translation_x, translation_y, flip_h
     image_new = np.zeros((pad_size*2+image.shape[0], pad_size*2+image.shape[1], 3), dtype=np.uint8) + np.array((255,255,255), dtype=np.uint8).reshape(1,1,3)
     image_new[pad_size:pad_size+image.shape[0], pad_size:pad_size+image.shape[1]] = image
     image = np.array(image_new)
-    transformed_image = np.array(image)
+    rows, cols, _ = image.shape
+    rot = rotation * np.pi / 180
+    id_rows = np.arange(0, rows).reshape([-1, 1]) + np.zeros([rows, cols]) - float(rows)/2
+    id_cols = np.arange(0, cols).reshape([1, -1]) + np.zeros([rows, cols]) - float(cols)/2
+    act_rows, act_cols = id_rows - translation_y, id_cols * np.where(flip_horizontal,-1,1) - translation_x
+    x = (np.cos(rot) * act_rows - np.sin(rot) * act_cols) / scale + float(rows)/2
+    y = (np.sin(rot) * act_rows + np.cos(rot) * act_cols) / scale + float(cols)/2
+    t_rows, t_cols = x.astype(int), y.astype(int)
+    ileg = (t_rows < 0) | (t_rows >= rows) | (t_cols < 0) | (t_cols >= cols)
+    t_rows[ileg], t_cols[ileg] = 0, 0
+    transformed_image = image[t_rows, t_cols, :]
+    transformed_image[ileg] = 255
 
     ### FILL: Apply Composition Transform 
     # Note: for scale and rotation, implement them around the center of the image （围绕图像中心进行放缩和旋转）
